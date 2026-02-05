@@ -575,21 +575,33 @@
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqGw-rps7f99F3rttNPVW-m8jHVxNgiNLYJG2A3e0b012Is5IhKbNYUjLRNjmevXcD/exec';
         
+        // Exercise order and colors (order determines stacking in chart)
+        const EXERCISE_ORDER = [
+            'Treadmill',
+            'Class', 
+            'Weights',
+            'Stretching',
+            '7 Minute',
+            'Yoga',
+            'Hike',
+            'Flexibility'
+        ];
+        
         const COLORS = {
             'Treadmill': '#3b82f6',
+            'Class': '#ec4899',
             'Weights': '#ef4444',
-            '7 Minute': '#10b981',
             'Stretching': '#f59e0b',
+            '7 Minute': '#10b981',
             'Yoga': '#8b5cf6',
             'Hike': '#06b6d4',
-            'Class': '#ec4899',
             'Flexibility': '#14b8a6'
         };
         
         const EXTRA_COLORS = ['#6366f1', '#f97316', '#84cc16', '#64748b'];
         
         let exercises = [];
-        let colorIndex = 0;
+        let customColorMap = {};
         
         // Initialize on load
         window.addEventListener('DOMContentLoaded', function() {
@@ -806,9 +818,12 @@
             if (COLORS[type]) {
                 return COLORS[type];
             }
-            const color = EXTRA_COLORS[colorIndex % EXTRA_COLORS.length];
-            colorIndex++;
-            return color;
+            // For custom exercises, assign and remember a color
+            if (!customColorMap[type]) {
+                const usedColors = Object.keys(customColorMap).length;
+                customColorMap[type] = EXTRA_COLORS[usedColors % EXTRA_COLORS.length];
+            }
+            return customColorMap[type];
         }
         
         function renderChart() {
@@ -842,7 +857,7 @@
                 }
             });
             
-            // Get all types for legend
+            // Get all types for legend (in order)
             const allTypes = [];
             exercises.forEach(function(ex) {
                 if (allTypes.indexOf(ex.type) === -1) {
@@ -850,10 +865,28 @@
                 }
             });
             
+            // Sort types by defined order, then alphabetically for custom
+            allTypes.sort(function(a, b) {
+                const aIndex = EXERCISE_ORDER.indexOf(a);
+                const bIndex = EXERCISE_ORDER.indexOf(b);
+                
+                if (aIndex !== -1 && bIndex !== -1) {
+                    return aIndex - bIndex;
+                }
+                if (aIndex !== -1) return -1;
+                if (bIndex !== -1) return 1;
+                return a.localeCompare(b);
+            });
+            
             // Build chart HTML
             let barsHTML = '';
             days.forEach(function(day) {
                 const types = Object.keys(day.exercises);
+                
+                // Sort types in the same order as legend
+                types.sort(function(a, b) {
+                    return allTypes.indexOf(a) - allTypes.indexOf(b);
+                });
                 
                 let barHTML = '<div class="chart-day">';
                 barHTML += '<div class="chart-bar-container">';
@@ -906,10 +939,11 @@
             
             let html = '';
             recent.forEach(function(exercise) {
+                const color = getColor(exercise.type);
                 html += '<div class="exercise-card">';
                 html += '<div class="exercise-header">';
                 html += '<div class="exercise-title">';
-                html += '<span class="exercise-name">' + exercise.type + '</span>';
+                html += '<span class="exercise-name" style="color: ' + color + ';">' + exercise.type + '</span>';
                 html += '<span class="intensity-badge intensity-' + exercise.intensity + '">' + exercise.intensity + '</span>';
                 html += '</div>';
                 html += '<button class="delete-btn" onclick="deleteExercise(' + exercise.id + ')">✕</button>';
