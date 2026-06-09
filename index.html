@@ -490,8 +490,8 @@
                     <div class="stat-value" id="weekCount">0</div>
                 </div>
                 <div class="stat-card purple">
-                    <div class="stat-label">Total Time</div>
-                    <div class="stat-value" id="totalMinutes">0 min</div>
+                    <div class="stat-label">This Week Minutes</div>
+                    <div class="stat-value" id="weekMinutes">0 min</div>
                 </div>
             </div>
             
@@ -1015,6 +1015,20 @@
             }, 3000);
         }
         
+        function getThisWeekMinutes() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    monday.setDate(today.getDate() - daysFromMonday);
+    
+    return exercises.filter(function(ex) {
+        const parts = ex.date.split('-');
+        const exDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        return exDate >= monday && exDate <= today;
+    }).reduce(function(sum, ex) { return sum + ex.duration; }, 0);
+}
         function getTotalMinutes() {
             return exercises.reduce(function(sum, ex) { return sum + ex.duration; }, 0);
         }
@@ -1406,7 +1420,7 @@
         
         function render() {
             console.log('Rendering...');
-            document.getElementById('totalMinutes').textContent = getTotalMinutes() + ' min';
+            document.getElementById('weekMinutes').textContent = getThisWeekMinutes() + ' min';
             document.getElementById('weekCount').textContent = getThisWeekCount();
             renderWeeklyChart();
             renderChart();
